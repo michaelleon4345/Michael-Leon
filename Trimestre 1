@@ -70,4 +70,4 @@ while True:
         print('Temperature: %3.1f F' %temp_f)
         print('Humidity: %3.1f %%' %hum)
     except OSError as e:
-        print('Failed to read sensor.')   continue
+        print('Failed to read sensor.')   
