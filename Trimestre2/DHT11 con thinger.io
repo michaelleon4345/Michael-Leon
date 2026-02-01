@@ -1,51 +1,56 @@
-<div style="
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  font-family: 'Segoe UI', Arial;
-">
+#define THINGER_SERIAL_DEBUG
 
-  <!-- TARJETA TEMPERATURA -->
-  <div style="
-    width: 220px;
-    background: linear-gradient(135deg, #ff6a00, #ffb347);
-    color: white;
-    border-radius: 16px;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-  ">
-    <h3 style="margin: 0;">🌡️ Temperatura</h3>
-    <div id="temp" style="
-      font-size: 48px;
-      font-weight: bold;
-      margin-top: 15px;
-    ">-- °C</div>
-  </div>
+#include <ThingerESP32.h>
+#include "DHT.h"
 
-  <!-- TARJETA HUMEDAD -->
-  <div style="
-    width: 220px;
-    background: linear-gradient(135deg, #00c6ff, #0072ff);
-    color: white;
-    border-radius: 16px;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-  ">
-    <h3 style="margin: 0;">Humedad</h3>
-    <div id="hum" style="
-      font-size: 48px;
-      font-weight: bold;
-      margin-top: 15px;
-    ">-- %</div>
-  </div>
+// ===== Credenciales Thinger.io =====
+#define USERNAME "michaelleon"
+#define DEVICE_ID "Leon"
+#define DEVICE_CREDENTIAL "123456"
 
-</div>
+// ===== WiFi =====
+#define SSID "Red.L.P"
+#define SSID_PASSWORD""
+// ===== DHT =====
+#define DHTPIN 23
+#define DHTTYPE DHT11
 
-<script>
-  function refresh(data){
-    document.getElementById("temp").innerHTML = data.field1 + " °C";
-    document.getElementById("hum").innerHTML  = data.field2 + " %";
+DHT dht(DHTPIN, DHTTYPE);
+ThingerESP32 thing(USERNAME, DEVICE_ID, DEVICE_CREDENTIAL);
+
+void setup() {
+  Serial.begin(115200);
+
+  // Conexión WiFi
+  thing.add_wifi(SSID, SSID_PASSWORD);
+
+  // Inicializar DHT
+  dht.begin();
+
+  // ===== Recurso en Thinger.io =====
+ thing["Data"] >> [](pson &out){
+  float temp = dht.readTemperature();
+  float hum  = dht.readHumidity();
+
+  Serial.print("Temperatura: ");
+  Serial.print(temp);
+  Serial.print(" °C | Humedad: ");
+  Serial.print(hum);
+  Serial.println(" %");
+
+  if (isnan(temp) || isnan(hum)) {
+    Serial.println(" Error leyendo DHT11");
+    out["field1"] = 0;
+    out["field2"] = 0;
+    out["error"] = "DHT11 error";
+  } else {
+    out["field1"] = temp;
+    out["field2"] = hum;
   }
-</script>
+};
+
+}
+
+void loop() {
+  thing.handle();
+}
