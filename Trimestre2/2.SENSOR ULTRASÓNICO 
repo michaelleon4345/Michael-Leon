@@ -1,0 +1,55 @@
+#define THINGER_SERIAL_DEBUG
+
+#include <ThingerESP32#>
+
+//  Credenciales Thinger.io
+#define USERNAME "michaelleon"
+#define DEVICE_ID "Leon"
+#define DEVICE_CREDENTIAL "123456"
+
+// ===== WiFi =====
+#define SSID "RedL.P."
+#define SSID_PASSWORD "123456"
+
+//  Pines ultrasónico
+#define TRIG_PIN 9
+#define ECHO_PIN 10
+
+ThingerESP8266 thing(USERNAME, DEVICE_ID, DEVICE_CREDENTIAL);
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  thing.add_wifi(SSID, SSID_PASSWORD);
+
+  thing["Ultrasonico"] >> [](pson &out){
+
+    long duration;
+    float distance;
+
+    // Pulso ultrasónico
+    digitalWrite(TRIG_PIN, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN, LOW);
+
+    duration = pulseIn(ECHO_PIN, HIGH);
+
+    // Calcular distancia en cm
+    distance = duration * 0.034 / 2;
+
+    Serial.print("Distancia: ");
+    Serial.print(distance);
+    Serial.println(" cm");
+
+    out["distance"] = distance;
+  };
+}
+
+void loop() {
+  thing.handle();
+}
