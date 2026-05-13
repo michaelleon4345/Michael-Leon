@@ -1,1 +1,49 @@
+#include "BluetoothSerial.h"
 
+BluetoothSerial SerialBT;
+
+const int ledPin = 2;
+String mensaje = "";
+
+void setup() {
+  Serial.begin(115200);
+  SerialBT.begin("ESP32");
+
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
+  Serial.println("Listo para recibir datos...");
+}
+
+void loop() {
+  // 1. Leer el mensaje completo
+  while (SerialBT.available()) {
+    char c = SerialBT.read();
+    mensaje += c;
+    delay(5); // Pequeña espera para asegurar que el buffer se llene bien
+  }
+
+  // 2. Procesar solo si el mensaje no está vacío
+  if (mensaje.length() > 0) {
+    Serial.print("Mensaje recibido: ");
+    Serial.println(mensaje);
+    
+    // Convertir a mayúsculas para evitar errores de coincidencia
+    mensaje.toUpperCase();
+
+    // 3. Comparar y actuar
+    if (mensaje.indexOf("HOLA") >= 0) {
+      digitalWrite(ledPin, HIGH);
+      Serial.println("-> ACCIÓN: LED ENCENDIDO");
+    } 
+    else if (mensaje.indexOf("ADIOS") >= 0) {
+      digitalWrite(ledPin, LOW);
+      Serial.println("-> ACCIÓN: LED APAGADO");
+    }
+
+    // 4. LIMPIAR SIEMPRE el mensaje después de procesarlo
+    mensaje = ""; 
+  }
+
+  delay(20);
+}
