@@ -1,0 +1,76 @@
+#include "BluetoothSerial.h"
+
+BluetoothSerial SerialBT;
+
+const int ledPin1 = 16;
+const int ledPin2 = 5;
+const int ledPin3 = 19;
+const int ledPin4 = 4;
+
+String mensaje = "";
+
+void setup() {
+  Serial.begin(115200);
+  SerialBT.begin("ESP32");
+
+  pinMode(ledPin1, OUTPUT);  
+  pinMode(ledPin2, OUTPUT);  
+  pinMode(ledPin3, OUTPUT);
+  pinMode(ledPin4, OUTPUT);
+
+  digitalWrite(ledPin1, LOW);  
+  digitalWrite(ledPin2, LOW);
+  digitalWrite(ledPin3, LOW);
+  digitalWrite(ledPin4, LOW);
+
+  Serial.println("Listo para recibir datos...");
+}
+
+void loop() {
+  while (SerialBT.available()) {
+    char c = SerialBT.read();
+    mensaje += c;
+    
+  }
+
+  if (mensaje.length() > 0) {
+    Serial.print("Mensaje recibido: ");
+    Serial.println(mensaje);
+
+    
+    if (mensaje.indexOf("A") >= 0)      
+    { digitalWrite(ledPin1, HIGH); 
+    Serial.println("LED1 ON"); }
+
+    else if (mensaje.indexOf("a") >= 0) 
+    { digitalWrite(ledPin1, LOW);  
+    Serial.println("LED1 OFF"); }
+
+    if (mensaje.indexOf("B") >= 0)      
+    { digitalWrite(ledPin2, HIGH); 
+    Serial.println("LED2 ON"); }
+
+    else if (mensaje.indexOf("b") >= 0) 
+    { digitalWrite(ledPin2, LOW);  
+    Serial.println("LED2 OFF"); }
+
+    if (mensaje.indexOf("C") >= 0)      
+    { digitalWrite(ledPin3, HIGH); 
+    Serial.println("LED3 ON"); }
+
+    else if (mensaje.indexOf("c") >= 0) 
+    { digitalWrite(ledPin3, LOW);  
+    Serial.println("LED3 OFF"); }
+
+    if (mensaje.indexOf("D") >= 0)      
+    { digitalWrite(ledPin4, HIGH); 
+    Serial.println("LED4 ON"); }
+    else if (mensaje.indexOf("d") >= 0) 
+    { digitalWrite(ledPin4, LOW);  
+    Serial.println("LED4 OFF"); }
+
+    mensaje = "";
+  }
+
+  delay(20);
+}
