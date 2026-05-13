@@ -1,0 +1,94 @@
+#include "BluetoothSerial.h"
+
+// Configuración de Bluetooth
+BluetoothSerial SerialBT;
+String nombreDispositivo = "Esp32_leds-y-rele";
+
+// Definición de Pines (GPIO)
+const int LUZ_1 = 2;  
+const int LUZ_2 = 4;  
+const int LUZ_3 = 5;  
+const int RELE = 18;  
+
+// 🔹 NUEVO: Pines Sensor Ultrasónico
+const int TRIG_PIN = 23; 
+const int ECHO_PIN = 22;
+
+// Variables para el sensor
+long duracion;
+int distancia;
+const int UMBRAL_DISTANCIA = 20; // Distancia en cm para activar el relé
+
+void setup() {
+  Serial.begin(115200);
+
+  if (!SerialBT.begin(nombreDispositivo)) {
+    Serial.println("¡Error al iniciar Bluetooth!");
+  } else {
+    Serial.println("Bluetooth listo. Conéctate a: " + nombreDispositivo);
+  }
+
+  // Configuración de pines
+  pinMode(LUZ_1, OUTPUT);
+  pinMode(LUZ_2, OUTPUT);
+  pinMode(LUZ_3, OUTPUT);
+  pinMode(RELE, OUTPUT);
+  
+  // 🔹 NUEVO: Configuración Ultrasónico
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  // Todo apagado al inicio
+  digitalWrite(LUZ_1, LOW);
+  digitalWrite(LUZ_2, LOW);
+  digitalWrite(LUZ_3, LOW);
+  digitalWrite(RELE, LOW);
+}
+
+void loop() {
+  // --- 🔹 LÓGICA DEL SENSOR ULTRASÓNICO ---
+  // Limpiar el pin TRIG
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  // Activar el sensor por 10 microsegundos
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  // Leer el tiempo que tarda el eco
+  duracion = pulseIn(ECHO_PIN, HIGH);
+  // Calcular distancia en cm: Velocidad del sonido (0.034 cm/us) / 2
+  distancia = duracion * 0.034 / 2;
+
+  // Lógica de control del Relé por distancia
+  // "Cuando tenga medida alta se encienda el relé, medida baja se apaga"
+  if (distancia >= UMBRAL_DISTANCIA) {
+    digitalWrite(RELE, HIGH);
+  } else {
+    digitalWrite(RELE, LOW);
+  }
+
+  // --- LÓGICA DE BLUETOOTH (LEDs) ---
+  if (SerialBT.available()) {
+    char letraRecibida = SerialBT.read();
+    
+    switch (letraRecibida) {
+      case 'A': digitalWrite(LUZ_1, HIGH); break;
+      case 'a': digitalWrite(LUZ_1, LOW); break;
+
+      case 'B': digitalWrite(LUZ_2, HIGH); break;
+      case 'b': digitalWrite(LUZ_2, LOW); break;
+
+      case 'C': digitalWrite(LUZ_3, HIGH); break;
+      case 'c': digitalWrite(LUZ_3, LOW); break;
+      
+      // Nota: El relé ahora es controlado automáticamente por el sensor, 
+      // pero puedes mantener estos casos si quieres controlarlo manualmente también.
+      case 'D': digitalWrite(RELE, HIGH); break; 
+      case 'd': digitalWrite(RELE, LOW); break;
+    }
+  }
+
+  // Pequeña pausa para estabilidad
+  delay(100); 
+}
