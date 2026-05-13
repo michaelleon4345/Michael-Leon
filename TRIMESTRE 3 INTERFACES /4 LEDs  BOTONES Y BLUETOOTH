@@ -1,0 +1,112 @@
+#include "BluetoothSerial.h"
+
+BluetoothSerial SerialBT;
+
+// Pines LEDs
+const int ledPin1 = 16;
+const int ledPin2 = 5;
+const int ledPin3 = 19;
+const int ledPin4 = 4;
+   
+// Pines Pulsadores
+const int btnPin1 = 13;
+const int btnPin2 = 12;
+const int btnPin3 = 14;
+const int btnPin4 = 27;
+
+// Estado de los LEDs
+bool ledState1 = false;
+bool ledState2 = false;
+bool ledState3 = false;
+bool ledState4 = false;
+
+// Estado anterior de los pulsadores (para detectar flanco)
+bool lastBtn1 = HIGH;
+bool lastBtn2 = HIGH;
+bool lastBtn3 = HIGH;
+bool lastBtn4 = HIGH;
+
+String mensaje = "";
+
+void setup() {
+  Serial.begin(115200);
+  SerialBT.begin("ESP32");
+
+  // Configurar LEDs
+  pinMode(ledPin1, OUTPUT);
+  pinMode(ledPin2, OUTPUT);
+  pinMode(ledPin3, OUTPUT);
+  pinMode(ledPin4, OUTPUT);
+
+  digitalWrite(ledPin1, LOW);
+  digitalWrite(ledPin2, LOW);
+  digitalWrite(ledPin3, LOW);
+  digitalWrite(ledPin4, LOW);
+
+  // Configurar pulsadores con resistencia pull-up interna
+  pinMode(btnPin1, INPUT_PULLUP);
+  pinMode(btnPin2, INPUT_PULLUP);
+  pinMode(btnPin3, INPUT_PULLUP);
+  pinMode(btnPin4, INPUT_PULLUP);
+
+  Serial.println("Listo para recibir datos...");
+}
+
+// Función auxiliar para aplicar estado a un LED
+void setLed(int pin, bool &state, bool newState, String nombre) {
+  state = newState;
+  digitalWrite(pin, state ? HIGH : LOW);
+  Serial.println(nombre + (state ? " ON" : " OFF"));
+}
+
+// Verificar pulsadores con detección de flanco (toggle al presionar)
+void checkButtons() {
+  bool btn1 = digitalRead(btnPin1);
+  bool btn2 = digitalRead(btnPin2);
+  bool btn3 = digitalRead(btnPin3);
+  bool btn4 = digitalRead(btnPin4);
+
+  // Flanco descendente = pulsador presionado (LOW porque INPUT_PULLUP)
+  if (btn1 == LOW && lastBtn1 == HIGH) setLed(ledPin1, ledState1, !ledState1, "LED1");
+  if (btn2 == LOW && lastBtn2 == HIGH) setLed(ledPin2, ledState2, !ledState2, "LED2");
+  if (btn3 == LOW && lastBtn3 == HIGH) setLed(ledPin3, ledState3, !ledState3, "LED3");
+  if (btn4 == LOW && lastBtn4 == HIGH) setLed(ledPin4, ledState4, !ledState4, "LED4");
+
+  lastBtn1 = btn1;
+  lastBtn2 = btn2;
+  lastBtn3 = btn3;
+  lastBtn4 = btn4;
+}
+
+void loop() {
+  // Leer Bluetooth
+  while (SerialBT.available()) {
+    char c = SerialBT.read();
+    mensaje += c;
+  }
+
+  // Procesar mensaje Bluetooth
+  if (mensaje.length() > 0) {
+    Serial.print("Mensaje recibido: ");
+    Serial.println(mensaje);
+
+    if      (mensaje.indexOf("A") >= 0) setLed(ledPin1, ledState1, true,  "LED1");
+    else if (mensaje.indexOf("a") >= 0) setLed(ledPin1, ledState1, false, "LED1");
+
+    if      (mensaje.indexOf("B") >= 0) setLed(ledPin2, ledState2, true,  "LED2");
+    else if (mensaje.indexOf("b") >= 0) setLed(ledPin2, ledState2, false, "LED2");
+
+    if      (mensaje.indexOf("C") >= 0) setLed(ledPin3, ledState3, true,  "LED3");
+    else if (mensaje.indexOf("c") >= 0) setLed(ledPin3, ledState3, false, "LED3");
+
+    if      (mensaje.indexOf("D") >= 0) setLed(ledPin4, ledState4, true,  "LED4");
+    else if (mensaje.indexOf("d") >= 0) setLed(ledPin4, ledState4, false, "LED4");
+
+    mensaje = "";
+  }
+
+  // Leer pulsadores
+  checkButtons();
+
+  delay(20);
+}
